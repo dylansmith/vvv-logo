@@ -11,7 +11,7 @@
             defaults = {
                 triangleOffset: 3.5,
                 radius: 150,
-                rotationSpeed: 0.8,
+                rotationSpeed: 0,
                 strokeWidthRatio: 0.05,
                 showIntersections: false,
                 centre: null,
@@ -42,7 +42,7 @@
         function update() {
             // calculate values dependent on radius
             conf.offset_x = conf.radius / conf.triangleOffset;
-            conf.offset_y = conf.offset_x * 1.75;
+            conf.offset_y = Math.round(conf.offset_x * Math.tan(Math.PI/3)); //tan(60)
             conf.triangles.strokeWidth = Math.round(conf.radius * conf.strokeWidthRatio);
             conf.centre = new Point(stage.width()/2, Math.round(stage.height()/2 - conf.radius/3));
             render();
