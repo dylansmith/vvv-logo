@@ -8,28 +8,30 @@
     <script type="text/paperscript" canvas="stage">
     window.vvv = (function() {
         var stage = $('#stage'),
-            conf = {
+            defaults = {
                 radius: 150,
                 offset: 3.5,
                 opacity: 0.8,
                 rotationSpeed: 0.8,
+                circleOpacity: 0.2,
                 strokeColor: '#fff',
                 strokeJoin: 'miter',
                 strokeWidth: null,
                 strokeWidthRatio: 0.05,
-                offset_x: null,
-                offset_y: null,
+                showIntersections: false,
                 centre: null,
-                circleOpacity: 0.2
-            }
+                offset_x: null,
+                offset_y: null
+            },
+            conf = $.extend({}, defaults),
             triangles = [],
             circles = [];
 
         function update() {
-            conf.radius = parseInt($('#set-radius').val(), 10) || conf.radius;
+            conf.radius = parseInt($('#set-radius').val(), 10) || defaults.radius
             conf.offset_x = conf.radius / conf.offset;
             conf.offset_y = conf.offset_x * 1.75;
-            conf.strokeJoin = $('#set-strokeJoin').val() || conf.strokeJoin;
+            conf.strokeJoin = $('#set-strokeJoin').val() || defaults.strokeJoin;
             conf.strokeWidth = Math.round(conf.radius * conf.strokeWidthRatio);
             conf.centre = new Point(stage.width()/2, stage.height()/2 - 50);
             render();
@@ -74,11 +76,11 @@
         });
 
         $('#btn-rotation').click(function() {
-            conf.rotationSpeed = ($(this).data('state')) ? 0 : 0.8;
+            conf.rotationSpeed = ($(this).data('state')) ? 0 : defaults.rotationSpeed;
         });
 
         $('#btn-circles').click(function() {
-            conf.circleOpacity = ($(this).data('state')) ? 0 : 0.1;
+            conf.circleOpacity = ($(this).data('state')) ? 0 : defaults.circleOpacity;
         });
 
         $('#btn-triangles').click(function() {
@@ -86,7 +88,7 @@
                 conf.opacity = 0;
                 conf.showIntersections = true;
             } else {
-                conf.opacity = 0.8;
+                conf.opacity = defaults.opacity;
                 conf.showIntersections = false;
 
             }
