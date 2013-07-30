@@ -9,65 +9,76 @@
     window.vvv = (function() {
         var stage = $('#stage'),
             defaults = {
+                triangleOffset: 3.5,
                 radius: 150,
-                offset: 3.5,
-                opacity: 0.8,
                 rotationSpeed: 0.8,
-                circleOpacity: 0.2,
-                strokeColor: '#fff',
-                strokeJoin: 'miter',
-                strokeWidth: null,
                 strokeWidthRatio: 0.05,
                 showIntersections: false,
                 centre: null,
                 offset_x: null,
-                offset_y: null
+                offset_y: null,
+                chaos: {
+                    opacityMin: 0.8,
+                    opacityMax: 1,
+                    strokeMin: 0,
+                    strokeMax: 1,
+                    colorise: false,
+                },
+                triangles: {
+                    opacity: 0.8,
+                    strokeColor: '#fff',
+                    strokeJoin: 'miter',
+                    strokeWidth: 1
+                },
+                circles: {
+                    opacity: 0.3,
+                    strokeColor: '#999',
+                    strokeWidth: 1
+                }
             },
-            conf = $.extend({}, defaults),
-            triangles = [],
-            circles = [];
+            conf = $.extend(true, {}, defaults),
+            objects = {};
 
         function update() {
-            conf.radius = parseInt($('#set-radius').val(), 10) || defaults.radius
-            conf.offset_x = conf.radius / conf.offset;
+            // calculate values dependent on radius
+            conf.offset_x = conf.radius / conf.triangleOffset;
             conf.offset_y = conf.offset_x * 1.75;
-            conf.strokeJoin = $('#set-strokeJoin').val() || defaults.strokeJoin;
-            conf.strokeWidth = Math.round(conf.radius * conf.strokeWidthRatio);
-            conf.centre = new Point(stage.width()/2, stage.height()/2 - 50);
+            conf.triangles.strokeWidth = Math.round(conf.radius * conf.strokeWidthRatio);
+            conf.centre = new Point(stage.width()/2, Math.round(stage.height()/2 - conf.radius/3));
             render();
         }
 
         function render() {
             project.activeLayer.removeChildren();
-            circles = [];
-            triangles = [];
+            objects.circles = [];
+            objects.triangles = [];
 
             $([ conf.centre,
                 new Point(conf.centre.x - conf.offset_x, conf.centre.y + conf.offset_y),
                 new Point(conf.centre.x + conf.offset_x, conf.centre.y + conf.offset_y) ]).each(function(i, pt) {
 
-                triangles.push(drawTriangle(pt));
-                circles.push(drawCircle(pt, conf.radius * .99));
+                objects.triangles.push(drawTriangle(pt));
+                objects.circles.push(drawCircle(pt, conf.radius * .99));
             });
         }
 
         function drawCircle(centre, radius) {
             var c = new Path.Circle(centre, radius);
-            c.strokeColor = '#fff';
-            c.opacity = conf.circleOpacity;
+            c.set(conf.circles);
             c._centre = centre;
             return c;
         }
 
         function drawTriangle(centre) {
             var t = new Path.RegularPolygon(centre, 3, conf.radius);
+            t.set(conf.triangles);
             t.rotate(60, centre);
-            t.opacity = conf.opacity;
-            t.strokeColor = conf.strokeColor;
-            t.strokeJoin = conf.strokeJoin;
-            t.strokeWidth = conf.strokeWidth;
             t._centre = centre;
             return t;
+        }
+
+        function rand(min, max) {
+            return Math.random() * (max - min) + min;
         }
 
         // add toggle state
@@ -80,17 +91,34 @@
         });
 
         $('#btn-circles').click(function() {
-            conf.circleOpacity = ($(this).data('state')) ? 0 : defaults.circleOpacity;
+            conf.circles.opacity = ($(this).data('state')) ? 0 : defaults.circles.opacity;
         });
 
         $('#btn-triangles').click(function() {
             if ($(this).data('state')) {
-                conf.opacity = 0;
+                conf.triangles.opacity = 0;
                 conf.showIntersections = true;
             } else {
-                conf.opacity = defaults.opacity;
+                conf.triangles.opacity = defaults.triangles.opacity;
                 conf.showIntersections = false;
+            }
+        });
 
+        $('#btn-colorise').click(function() {
+            conf.chaos.colorise = !conf.chaos.colorise;
+            console.log(conf.chaos.colorise);
+        });
+
+        $('#btn-chaos').click(function() {
+            if ($(this).data('state')) {
+                conf.chaos = $.extend(conf.chaos, {
+                    colorise: true,
+                    strokeMax: Math.round(conf.triangles.strokeWidth * 1.5),
+                    strokeMin: Math.round(conf.triangles.strokeWidth * -0.1)
+                });
+            } else {
+                conf.chaos = $.extend({}, defaults.chaos);
+                console.log(conf.chaos);
             }
         });
 
@@ -98,29 +126,39 @@
 
         return {
             'config': conf,
-            'triangles': triangles,
-            'circles': circles,
-            'update': update
+            'objects': objects,
+            'update': update,
+            'rand': rand
         };
+
     }());
 
     var intersectionGroup = new Group();
 
     function onFrame(event) {
         var cfg = vvv.config,
-            ts = vvv.triangles,
-            cs = vvv.circles,
+            ts = vvv.objects.triangles,
+            cs = vvv.objects.circles,
             intersections, j, intersectionPath;
 
         intersectionGroup.removeChildren();
         $(ts).each(function(i, t) {
-            t.strokeWidth = cfg.strokeWidth + Math.floor(2 + (Math.random() * 2) - 2);
-            t.opacity = cfg.opacity * (0.8 + (Math.random() * 0.2));
+            // create chaos
+            t.strokeWidth = cfg.triangles.strokeWidth + Math.floor(vvv.rand(cfg.chaos.strokeMin, cfg.chaos.strokeMax));
+            t.opacity = cfg.triangles.opacity * vvv.rand(cfg.chaos.opacityMin, cfg.chaos.opacityMax);
+            if (cfg.chaos.colorise === true) {
+                t.strokeColor.hue += i+1;
+                t.strokeColor.lightness = 0.5;
+                t.strokeColor.saturation = 1;
+            } else {
+                t.strokeColor = cfg.triangles.strokeColor;
+            }
+            // update circle opacity
+            cs[i].opacity = cfg.circles.opacity;
+            // rotate
             t.rotate(cfg.rotationSpeed, t._centre);
-            cs[i].opacity = cfg.circleOpacity;
-
             // draw intersections
-            if (vvv.config.showIntersections === true) {
+            if (cfg.showIntersections === true) {
                 intersections = ts[i].getIntersections(cs[i]);
                 for (j = 0; j < intersections.length; j++) {
                     intersectionPath = new Path.Circle({
@@ -172,6 +210,8 @@
         <button id="btn-rotation">toggle rotation</button>
         <button id="btn-circles">toggle circles</button>
         <button id="btn-triangles">toggle triangles/dots</button>
+        <button id="btn-colorise">toggle colors</button>
+        <button id="btn-chaos">toggle chaos</button>
     </div>
     <canvas id="stage" resize></canvas>
 </body>
