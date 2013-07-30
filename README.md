@@ -14,13 +14,13 @@ The animation runs off a configuration, which is accessible in the JS console. O
 console and inspect the window.vvv object to all the things you can play with. For example, try
 the following commands:
 
-vvv.config.triangles.strokeWidth = 20;
-vvv.config.triangles.opacity = 1;
-vvv.config.triangles.strokeColor = 'lime';
-vvv.config.chaos.strokeMax = 50;
+    vvv.config.triangles.strokeWidth = 20;
+    vvv.config.triangles.opacity = 1;
+    vvv.config.triangles.strokeColor = 'lime';
+    vvv.config.chaos.strokeMax = 50;
 
 If you want to change the radius of the entire logo, you need to run update() to recalculate
 some things, e.g.
 
-vvv.config.radius = 300;
-vvv.update();
+    vvv.config.radius = 300;
+    vvv.update();
